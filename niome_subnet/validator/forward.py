@@ -150,7 +150,7 @@ async def forward(self):
             )
         else:
             blocks = (self.block - config.BASE_BLOCK_NUMBER) % config.INTERVAL_BLOCKS
-            bt.logging.debug(f"Elapsed blocks: {blocks}")
+
             if blocks < config.VALIDATION_BLOCK and not self.is_broadcasting:
                 self.is_validating = False
                 self.is_broadcasting = True
