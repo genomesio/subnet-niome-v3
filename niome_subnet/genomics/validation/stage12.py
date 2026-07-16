@@ -179,17 +179,17 @@ def run_stage12() -> tuple[Stage1Result, Stage2Result]:
     with open(INVALID_EXPERIMENTS_PATH, "w") as f:
         json.dump(invalid_experiments, f, indent=2)
 
-    stage1 = Stage1Result(
+    stage1_result = Stage1Result(
         min=min(stage1_scores),
         max=max(stage1_scores),
         mean=sum(stage1_scores) / len(stage1_scores),
         valid=sum(1 for s in stage1_scores if s > 0.0) / len(stage1_scores)
     )
     
-    if stage1.valid < 1:
-        return stage1, None
-    
-    return stage1, Stage2Result(
+    if stage1_result.valid < 1:
+        return stage1_result, None
+
+    return stage1_result, Stage2Result(
         min=min(stage2_scores) if stage2_scores else 0.0,
         max=max(stage2_scores) if stage2_scores else 0.0,
         mean=sum(stage2_scores) / len(stage2_scores) if stage2_scores else 0.0
