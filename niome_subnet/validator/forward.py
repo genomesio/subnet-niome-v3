@@ -52,6 +52,7 @@ async def broadcast_task(self):
         bt.logging.info(f"Fetched task {task.id}")
         
         self.validated_uids = []
+        self.save_state()
 
         miner_uids = get_miner_uids(self)
         np.random.shuffle(miner_uids)
