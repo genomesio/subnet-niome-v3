@@ -131,8 +131,6 @@ def upload_final_submission_to_server(self, uids: list[int]) -> None:
         # Download and merge submissions from S3
         for uid in uids:
             try:
-                bt.logging.info(f"Downloading submission for UID {uid} from S3")
-                
                 # Construct S3 key for the submission file
                 s3_key = f"niome/{uid}.json"
                 local_path = f"data/temp_submission.json"
