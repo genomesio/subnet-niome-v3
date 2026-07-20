@@ -44,6 +44,7 @@ async def query_axon(self, uid, axon, synapse):
         return None
 
 async def broadcast_task(self):
+    bt.logging.info(f"Broadcasting task ...")
     try:
         os.makedirs("data", exist_ok=True)
 
