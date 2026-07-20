@@ -161,9 +161,7 @@ def simulate(exp):
     }
 
 
-def run_stage3(seed: int) -> Stage3Result:
-    random.seed(seed)
-
+def run_stage3() -> Stage3Result:
     experiments = load_experiments(VALID_EXPERIMENTS_PATH)
 
     results = []

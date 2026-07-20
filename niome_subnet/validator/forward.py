@@ -120,7 +120,6 @@ async def run_validation(self):
                 scores.append(miner_score)
                 self.save_state()
             except Exception as e:
-                bt.logging.error(f"Error downloading submission for {uid}: {e}")
                 continue
 
         bt.logging.info(f"Scores: {scores}")
