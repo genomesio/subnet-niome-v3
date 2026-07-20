@@ -89,6 +89,9 @@ async def run_validation(self):
     bt.logging.info(f"Validating miners' submissions ...")
     try:
         os.makedirs("data", exist_ok=True)
+        task = fetch_task(self)
+        self.task_id = task.id
+        bt.logging.info(f"Fetched task {task.id}")
 
         miner_uids = get_miner_uids(self)
         scores = []
@@ -115,8 +118,11 @@ async def run_validation(self):
                 miner_score = benchmark_submission(uid)
                 scores.append(miner_score)
                 self.save_state()
-            except:
+            except Exception as e:
+                bt.logging.error(f"Error downloading submission for {uid}: {e}")
                 continue
+
+        bt.logging.info(f"Scores: {scores}")
 
         self.set_weights(scores, self.task_id)
         owner_uid = self.metagraph.hotkeys.index(config.OWNER_HOTKEY)
