@@ -62,7 +62,7 @@ def check_pam(seq, start, L, cas):
 # =========================================================
 # STAGE 1 — STRICT GATES ONLY
 # =========================================================
-def stage1(exp, seq, mutation_map, contract):
+def stage1(exp, seq, mutation_map, contract, gene_region_start, gene_region_end):
     guide = exp["guideRNA"]
     cas = exp["cas_system"]
     start = exp["target_alignment_start"]
@@ -74,7 +74,7 @@ def stage1(exp, seq, mutation_map, contract):
     if len(guide) not in (20, 23):
         return 0.0, "invalid_length"
 
-    if start < 0 or start + len(guide) >= len(seq):
+    if start < gene_region_start or start + len(guide) > gene_region_end:
         return 0.0, "out_of_bounds"
 
     pam_ok, pam_status = check_pam(seq, start, len(guide), cas)
@@ -123,9 +123,13 @@ def run_stage12() -> tuple[Stage1Result, Stage2Result]:
 
     seq = load_chr11(CHR11_PATH)
     mutation_map = reference["mutation_map"]
+
     min_experiments = int(contract["rules"]["min_experiments"])
     max_experiments = int(contract["rules"]["max_experiments"])
-    
+
+    gene_region_start = int(reference["gene_region"]["start"])
+    gene_region_end = int(reference["gene_region"]["end"])
+
     seed = int(reference["challenge"]["seed"])
     random.seed(seed)
 
@@ -146,7 +150,7 @@ def run_stage12() -> tuple[Stage1Result, Stage2Result]:
 
         selected_guides[exp["target_alignment_start"]] = len(exp["guideRNA"])
 
-        s1, reason = stage1(exp, seq, mutation_map, contract)
+        s1, reason = stage1(exp, seq, mutation_map, contract, gene_region_start, gene_region_end)
         stage1_scores.append(s1)
 
         if s1 == 0.0:
