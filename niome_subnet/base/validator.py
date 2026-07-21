@@ -305,7 +305,7 @@ class BaseValidatorNeuron(BaseNeuron):
                 task_id=task_id,
                 uid=ms.uid,
                 hotkey=self.metagraph.hotkeys[ms.uid],
-                stage1=ms.stage1.mean if ms.stage1 else 0.0,
+                stage1=ms.stage1.mean * (ms.stage1.mean * ms.stage1.valid) if ms.stage1 else 0.0,
                 stage2=ms.stage2.mean if ms.stage2 else 0.0,
                 stage3=ms.stage3.mean_energy if ms.stage3 else 0.0,
                 stage4=ms.stage4.consistency_score if ms.stage4 else 0.0,
