@@ -119,6 +119,12 @@ async def run_validation(self):
                 miner_score = benchmark_submission(uid)
                 scores.append(miner_score)
                 self.save_state()
+                
+                s3_client.upload_file(
+                    Filename=config.MINER_SUBMISSION_PATH,
+                    Bucket=config.AWS_S3_BUCKET,
+                    Key=f"niome/{uid}.json",
+                )
             except Exception as e:
                 continue
 
