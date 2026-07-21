@@ -207,7 +207,7 @@ def run_stage12() -> tuple[Stage1Result, Stage2Result]:
         valid=min(len(valid_experiments), max_experiments) * 1.0 / max_experiments,
     )
     
-    if stage1_result.valid < min_experiments:
+    if len(valid_experiments) < min_experiments:
         return stage1_result, None
 
     return stage1_result, Stage2Result(

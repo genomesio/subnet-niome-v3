@@ -143,21 +143,6 @@ def evaluate(X, y):
 def run_stage4():
     stage3 = flatten_stage3(load_json(STAGE3_DATASET))
     stage12 = flatten_stage12(load_json(VALID_EXPERIMENTS_PATH))
-
-    # =====================================================
-    # ALIGNMENT
-    #
-    # FIX: stage3 and stage12 share feature column names
-    # (gc, distance, gc_score, dist_score, consistency,
-    # mutation, cas_system). Merging them as-is causes
-    # pandas to append _s3 / _s12 suffixes, so build_X
-    # can no longer find the bare column names.
-    #
-    # Solution: keep only the columns that stage12
-    # contributes uniquely (experiment_id as the join
-    # key, plus guideRNA, start, and stage2_score).
-    # All feature columns come from stage3 unchanged.
-    # =====================================================
     stage12_slim = stage12[["experiment_id", "guideRNA", "start", "stage2_score"]]
 
     df = stage3.merge(
