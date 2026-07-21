@@ -7,7 +7,7 @@ def benchmark_submission(uid: int) -> MinerScore:
     final_score = 0
     
     stage1_result, stage2_result = run_stage12()
-    final_score += stage1_result.mean * 0.2
+    final_score += stage1_result.mean * (stage1_result.mean * stage1_result.valid) * 0.2
 
     if stage2_result and stage2_result.mean > 0:
         final_score += stage2_result.mean * 0.2

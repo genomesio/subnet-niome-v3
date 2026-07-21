@@ -1,5 +1,6 @@
 import json
 import math
+import random
 
 from niome_subnet.genomics.model import (
   Stage1Result,
@@ -62,7 +63,6 @@ def check_pam(seq, start, L, cas):
 # STAGE 1 — STRICT GATES ONLY
 # =========================================================
 def stage1(exp, seq, mutation_map, contract):
-
     guide = exp["guideRNA"]
     cas = exp["cas_system"]
     start = exp["target_alignment_start"]
@@ -123,9 +123,17 @@ def run_stage12() -> tuple[Stage1Result, Stage2Result]:
 
     seq = load_chr11(CHR11_PATH)
     mutation_map = reference["mutation_map"]
+    min_experiments = int(contract["rules"]["min_experiments"])
+    max_experiments = int(contract["rules"]["max_experiments"])
+    
+    seed = int(reference["challenge"]["seed"])
+    random.seed(seed)
 
     valid_experiments = []
+    valid_submission = []
     invalid_experiments = []
+    
+    selected_guides = {}
 
     stage2_logs = []
 
@@ -133,6 +141,11 @@ def run_stage12() -> tuple[Stage1Result, Stage2Result]:
     stage2_scores = []
 
     for exp in submission:
+        if selected_guides.get(exp["target_alignment_start"], 0) == len(exp["guideRNA"]):
+            continue
+
+        selected_guides[exp["target_alignment_start"]] = len(exp["guideRNA"])
+
         s1, reason = stage1(exp, seq, mutation_map, contract)
         stage1_scores.append(s1)
 
@@ -149,6 +162,7 @@ def run_stage12() -> tuple[Stage1Result, Stage2Result]:
         stage2_scores.append(s2)
         stage2_logs.append(s2_info)
 
+        valid_submission.append(exp)
         valid_experiments.append({
             "experiment": exp,
 
@@ -175,6 +189,9 @@ def run_stage12() -> tuple[Stage1Result, Stage2Result]:
     # =====================================================
     with open(VALID_EXPERIMENTS_PATH, "w") as f:
         json.dump(valid_experiments, f, indent=2)
+    
+    with open(MINER_SUBMISSION_PATH, "w") as f:
+        json.dump(valid_submission, f, indent=2)
 
     with open(INVALID_EXPERIMENTS_PATH, "w") as f:
         json.dump(invalid_experiments, f, indent=2)
@@ -183,10 +200,10 @@ def run_stage12() -> tuple[Stage1Result, Stage2Result]:
         min=min(stage1_scores),
         max=max(stage1_scores),
         mean=sum(stage1_scores) / len(stage1_scores),
-        valid=sum(1 for s in stage1_scores if s > 0.0) / len(stage1_scores)
+        valid=min(len(valid_experiments), max_experiments) * 1.0 / max_experiments,
     )
     
-    if stage1_result.valid < 1:
+    if stage1_result.valid < min_experiments:
         return stage1_result, None
 
     return stage1_result, Stage2Result(
