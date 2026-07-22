@@ -1,5 +1,6 @@
 import json
 import math
+import random
 
 from collections import defaultdict, Counter
 from niome_subnet.genomics.model import Stage3Result
