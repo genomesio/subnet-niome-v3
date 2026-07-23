@@ -66,6 +66,8 @@ class Miner(BaseMinerNeuron):
             
             # Fire and forget - run process_task asynchronously without waiting
             asyncio.create_task(self.process_task(task_data, synapse.presigned_url))
+
+            return synapse
         except Exception as e:
             bt.logging.error(f"Forward error: {e}")
             synapse.error = str(e)
