@@ -6,6 +6,7 @@ from niome_subnet.genomics.model import (
   Stage1Result,
   Stage2Result,
 )
+from Bio.Seq import Seq
 from Bio import SeqIO
 
 from niome_subnet.utils.settings import (
@@ -38,23 +39,55 @@ def hamming(a, b):
     return sum(x != y for x, y in zip(a, b))
 
 
+def reverse_complement(seq):
+    return str(Seq(seq).reverse_complement())
+
+
 # =========================================================
 # PAM CHECK
 # =========================================================
-def check_pam(seq, start, L, cas):
+def check_pam(seq, start, L, cas, strand="+"):
 
     if start < 0 or start + L >= len(seq):
         return False, "out_of_bounds"
 
     if cas == "Cas9":
-        pam = seq[start + L:start + L + 3]
-        return (len(pam) == 3 and pam[1:] == "GG"), "ok"
+        if strand == "+":
+            if start + L + 3 > len(seq):
+                return False, "out_of_bounds"
+            pam = seq[start+L:start+L+3]
+        elif strand == "-":
+            if start < 3:
+                return False, "out_of_bounds"
+            pam = seq[start-3:start]
+            pam = reverse_complement(pam)
+        else:
+            return False, "invalid_strand"
+        return (
+            len(pam) == 3 and pam[1:] == "GG",
+            "ok"
+        )
 
     if cas == "Cas12a":
         if start < 4:
             return False, "out_of_bounds"
         pam = seq[start - 4:start]
         return (len(pam) == 4 and pam[:3] == "TTT"), "ok"
+
+    if cas == "Cas12a":
+        if strand == "+":
+            if start < 4:
+                return False, "out_of_bounds"
+            pam = seq[start-4:start]
+        elif strand == "-":
+            if start + L + 4 > len(seq):
+                return False, "out_of_bounds"
+            pam = seq[start+L:start+L+4]
+            pam = reverse_complement(pam)
+        return (
+            len(pam)==4 and pam[:3]=="TTT",
+            "ok"
+        )
 
     return False, "invalid_cas"
 
@@ -77,11 +110,24 @@ def stage1(exp, seq, mutation_map, contract, gene_region_start, gene_region_end)
     if start < gene_region_start or start + len(guide) > gene_region_end:
         return 0.0, "out_of_bounds"
 
-    pam_ok, pam_status = check_pam(seq, start, len(guide), cas)
+    strand = exp.get("strand", "")
+    pam_ok, pam_status = check_pam(seq, start, len(guide), cas, strand)
     if not pam_ok:
         return 0.0, f"pam_{pam_status}"
 
-    mm = hamming(guide, seq[start:start + len(guide)])
+    target = seq[start:start+len(guide)]
+    if strand == "+":
+        mm = hamming(
+            guide,
+            target
+        )
+    elif strand == "-":
+        mm = hamming(
+            reverse_complement(guide),
+            target
+        )
+    else:
+        return 0.0, "invalid_strand"
 
     if mm > contract["rules"]["max_mismatches"]:
         return 0.0, "too_many_mismatches"
@@ -137,7 +183,7 @@ def run_stage12() -> tuple[Stage1Result, Stage2Result]:
     valid_submission = []
     invalid_experiments = []
     
-    selected_guides = {}
+    selected_experiments = {}
 
     stage2_logs = []
 
@@ -145,11 +191,6 @@ def run_stage12() -> tuple[Stage1Result, Stage2Result]:
     stage2_scores = []
 
     for exp in submission:
-        if selected_guides.get(exp["target_alignment_start"], 0) == len(exp["guideRNA"]):
-            continue
-
-        selected_guides[exp["target_alignment_start"]] = len(exp["guideRNA"])
-
         s1, reason = stage1(exp, seq, mutation_map, contract, gene_region_start, gene_region_end)
         stage1_scores.append(s1)
 
@@ -160,6 +201,18 @@ def run_stage12() -> tuple[Stage1Result, Stage2Result]:
                 "reason": reason
             })
             continue
+
+        mutation = exp.get("mutation", "")
+        cas_system = exp.get("cas_system", "")
+        target_alignment_start = int(exp.get("target_alignment_start", 0))
+        guide_length = len(exp.get("guideRNA", ""))
+        strand = exp.get("strand", "")
+        exp_key = (mutation, cas_system, target_alignment_start, guide_length, strand)
+        
+        if exp_key in selected_experiments:
+            continue
+
+        selected_experiments[exp_key] = True
 
         s2, s2_info = stage2(exp, seq, mutation_map)
 
@@ -199,6 +252,9 @@ def run_stage12() -> tuple[Stage1Result, Stage2Result]:
 
     with open(INVALID_EXPERIMENTS_PATH, "w") as f:
         json.dump(invalid_experiments, f, indent=2)
+
+    if len(stage1_scores) == 0:
+        stage1_scores.append(0.0)
 
     stage1_result = Stage1Result(
         min=min(stage1_scores),
