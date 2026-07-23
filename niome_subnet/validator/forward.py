@@ -70,11 +70,10 @@ async def broadcast_task(self):
             if axon.ip == '0.0.0.0':
                 continue
 
-            remaining_blocks = (config.VALIDATION_BLOCK - self.block + config.BASE_BLOCK_NUMBER - 1) % config.INTERVAL_BLOCKS
             presigned_url = s3_client.generate_presigned_url(
                 "put_object",
                 Params={"Bucket": config.AWS_S3_BUCKET, "Key": f"niome/{uid}.json"},
-                ExpiresIn=remaining_blocks * 12,
+                ExpiresIn=config.SUBMISSION_TIMEOUT,
             )
 
             synapse = GenomicsTaskSynapse(
